@@ -3680,4 +3680,11 @@ function calcs.perform(env, skipEHP)
 	end
 
 	cacheData(cacheSkillUUID(env.player.mainSkill, env), env)
+
+	-- `fromItem` is set on shared `data.skills[*]` objects by CalcSetup.addExtraSupports when
+	-- an item grants a support gem. The UI (GemSelectControl) reads the same shared objects, so
+	-- leaving the flag set across calc passes (e.g. a Compare tab build's calc) would keep gems
+	-- granted by the *other* build's items hidden from the primary build's gem dropdown until
+	-- PoB restart. Clear the flags we set during this pass now that all readers are done.
+	calcs.clearFromItemFlags(env)
 end

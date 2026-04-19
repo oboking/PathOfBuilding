@@ -348,6 +348,19 @@ local function addBestSupport(supportEffect, appliedSupportList, mode)
 	end
 end
 
+-- Clear `fromItem` flags that this env set on shared gem data (data.skills[*]).
+-- The flag is set by addExtraSupports during initEnv and read during calc; it must be
+-- cleared before control returns to any UI code (e.g. GemSelectControl) or to another
+-- build's calc, otherwise it leaks onto the globally-shared data table.
+function calcs.clearFromItemFlags(env)
+	if env and env.grantedEffectFromItemFlags then
+		for ge in pairs(env.grantedEffectFromItemFlags) do
+			ge.fromItem = nil
+			env.grantedEffectFromItemFlags[ge] = nil
+		end
+	end
+end
+
 -- Initialise environment:
 -- 1. Initialises the player and enemy modifier databases
 -- 2. Merges modifiers for all items
@@ -374,6 +387,7 @@ function calcs.initEnv(build, mode, override, specEnv)
 		env = { }
 		env.build = build
 		env.data = build.data
+		env.grantedEffectFromItemFlags = { }
 		env.configInput = build.configTab.input
 		env.configPlaceholder = build.configTab.placeholder
 		env.calcsInput = build.calcsTab.input
@@ -439,6 +453,7 @@ function calcs.initEnv(build, mode, override, specEnv)
 		wipeEnv(env, accelerate)
 		modDB = env.modDB
 		enemyDB = env.enemyDB
+		env.grantedEffectFromItemFlags = env.grantedEffectFromItemFlags or { }
 	end
 
 	-- Set buff mode
@@ -1486,6 +1501,7 @@ function calcs.initEnv(build, mode, override, specEnv)
 					local grantedEffect = grantedEffect or env.data.skills[value.skillId]
 					if value and grantedEffect then -- Only item ExtraSupport gems should be flagged as fromItem. Imbued gems do not pass this check
 						grantedEffect.fromItem = true
+						env.grantedEffectFromItemFlags[grantedEffect] = true
 					end
 					-- Some skill gems share the same name as support gems, e.g. Barrage.
 					-- Since a support gem is expected here, if the first lookup returns a skill, then
@@ -1493,6 +1509,7 @@ function calcs.initEnv(build, mode, override, specEnv)
 					if value and grantedEffect and not grantedEffect.support then
 						grantedEffect = env.data.skills["Support"..value.skillId]
 						grantedEffect.fromItem = true
+						env.grantedEffectFromItemFlags[grantedEffect] = true
 					end
 					if grantedEffect then
 						for _, targetList in ipairs(targetListList) do

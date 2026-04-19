@@ -336,6 +336,9 @@ function calcs.calcFullDPS(build, mode, override, specEnv)
 			end
 		end
 	end
+	-- The final `initEnv` above prepares an env for a next iteration that never runs, so
+	-- its `fromItem` flags never reach a `calcs.perform` cleanup. Clear them here.
+	calcs.clearFromItemFlags(fullEnv)
 
 	-- Re-Add ailment DPS components
 	fullDPS.TotalDotDPS = 0
@@ -410,6 +413,9 @@ function calcs.buildActiveSkill(env, mode, skill, targetUUID, limitedProcessingF
 			return
 		end
 	end
+	-- No matching skill found: `calcs.perform` was never called, so clear `fromItem`
+	-- flags that initEnv set on shared gem data.
+	calcs.clearFromItemFlags(fullEnv)
 	ConPrintf("[calcs.buildActiveSkill] Failed to process skill: " .. skill.activeEffect.grantedEffect.name)
 end
 
